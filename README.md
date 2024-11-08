@@ -5,7 +5,7 @@
  
 # Intrinsic Single-Image HDR Reconstruction  
 
-[![Project](http://img.shields.io/badge/project-intrinsicHDR-B31B1B.svg)](https://yaksoy.github.io/intrinsicHDR/)
+[![Project](http://img.shields.io/badge/project-intrinsicHDR-cc9933.svg)](https://yaksoy.github.io/intrinsicHDR/)
 [![Paper](http://img.shields.io/badge/paper-ECCV2024-B31B1B.svg)](https://arxiv.org/abs/2409.13803)
 [![Video](http://img.shields.io/badge/video-YouTube-4b44ce.svg)](https://www.youtube.com/watch?v=EiyH52BcKkw)
 [![Supplementary](http://img.shields.io/badge/suppl.-intrinsicHDR-B31B1B.svg)](https://yaksoy.github.io/papers/ECCV24-IntrinsicHDR-supp.pdf)  
@@ -33,14 +33,16 @@ The pipeline expects input images to be linear.
 To dequantize and linearize images, run:
 
  ```bash
-# run linearization  
-python dequantize_and_linearize.py  
+# run linearization, e.g.  
+python3 dequantize_and_linearize.py --test_imgs /path/to/input/imgs --output_path /path/to/results --root .
 ```
  Next, run our pipeline.  
  ```bash
-# run module  
-python inference.py    
+# run module, e.g.  
+python inference.py
 ```
+
+
 
 ### Citation
 This implementation is provided for academic use only. Please cite our paper if you use this code or any of the models.   
@@ -58,4 +60,4 @@ year={2024},
 
 ".intrinsic_decomposition" is adapted from [IntrinsicImageDecomposition](https://github.com/compphoto/Intrinsic) for the decomposition network.
 
-".src/MiDaS/" is adapted from [MiDaS](https://github.com/intel-isl/MiDaS/tree/v2) for their EfficientNet implementation.
+".src/midas/" is adapted from [MiDaS](https://github.com/intel-isl/MiDaS/tree/v2) for their EfficientNet implementation.
