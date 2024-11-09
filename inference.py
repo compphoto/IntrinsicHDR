@@ -54,7 +54,7 @@ def blend_imgs(ldr,hdr,mask):
 
 
 
-def load_reconstruction_models(device,model_root = '.'):
+def load_reconstruction_models(device,model_root = 'https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/'):
     """
     Load reconstruction models
 
@@ -74,9 +74,10 @@ def load_reconstruction_models(device,model_root = '.'):
                         mode='shading',
                         )
 
-    # use model after training or load weights and drop into the production system
-    ckpt = os.path.join(model_root,'checkpoints/shading','sh_weights.ckpt')
-    # ckpt = model_root + 'sh_weights.ckpt' 
+    ## uncomment for offline working
+    # ckpt = os.path.join(model_root,'checkpoints/shading','sh_weights.ckpt')
+    
+    ckpt = model_root + 'sh_weights.ckpt' 
     sh_model = LitReconstructor.load_from_checkpoint(ckpt)
     sh_model.to(device)
     sh_model.eval()
@@ -89,8 +90,10 @@ def load_reconstruction_models(device,model_root = '.'):
     alb_model = LitReconstructor(
                         mode='albedo',
                         )
-    ckpt = os.path.join(model_root,'checkpoints/albedo','alb_weights.ckpt')
-    # ckpt = model_root + 'alb_weights.ckpt' 
+    ## uncomment for offline working
+    # ckpt = os.path.join(model_root,'checkpoints/albedo','alb_weights.ckpt')
+
+    ckpt = model_root + 'alb_weights.ckpt' 
     alb_model = LitReconstructor.load_from_checkpoint(ckpt)
     alb_model.to(device)
     alb_model.eval()
@@ -100,9 +103,12 @@ def load_reconstruction_models(device,model_root = '.'):
     # refinement model
     # ------------
     ref_model = LitRefiner()
-    ckpt = os.path.join(model_root,'checkpoints/refinement','ref_weights.ckpt') 
-    checkpoint = torch.load(ckpt)
-    #checkpoint = torch.hub.load_state_dict_from_url(model_root + 'ref_weights.ckpt', progress=True)
+
+    ## uncomment for offline working
+    # ckpt = os.path.join(model_root,'checkpoints/refinement','ref_weights.ckpt') 
+    # checkpoint = torch.load(ckpt)
+
+    checkpoint = torch.hub.load_state_dict_from_url(model_root + 'ref_weights.ckpt', progress=True)
 
     # ignore potential albedo and shading weights
     refiner_weights = {k: v for k, v in checkpoint["state_dict"].items() if k.startswith("refiner.")}

@@ -8,7 +8,8 @@
 [![Project](http://img.shields.io/badge/project-intrinsicHDR-cc9933.svg)](https://yaksoy.github.io/intrinsicHDR/)
 [![Paper](http://img.shields.io/badge/paper-ECCV2024-B31B1B.svg)](https://arxiv.org/abs/2409.13803)
 [![Video](http://img.shields.io/badge/video-YouTube-4b44ce.svg)](https://www.youtube.com/watch?v=EiyH52BcKkw)
-[![Supplementary](http://img.shields.io/badge/suppl.-intrinsicHDR-B31B1B.svg)](https://yaksoy.github.io/papers/ECCV24-IntrinsicHDR-supp.pdf)  
+[![Supplementary](http://img.shields.io/badge/suppl.-intrinsicHDR-B31B1B.svg)](https://yaksoy.github.io/papers/ECCV24-IntrinsicHDR-supp.pdf)
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/compphoto/IntrinsicHDR/blob/main/notebooks/intrinsicHDR.ipynb)  
 
 
 </div>
@@ -26,16 +27,25 @@ In this work, we introduce a physically-inspired remodeling of the HDR reconstru
 
 ![pipeline](./figures/pipeline.jpg)
 
-Try out our pipeline on your own images in Colab! [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/compphoto/intrinsicHDR/blob/main/notebooks/intrinsicHDR.ipynb)
+Try out our pipeline on your own images in Colab! [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/compphoto/IntrinsicHDR/blob/main/notebooks/intrinsicHDR.ipynb)
 
 ## How to run   
-First, install dependencies. The code was tested with Python 3.9.   
+First, install dependencies. The code was tested with Python 3.9. It is recommended to start with a fresh environment:
+```bash
+# create empty env
+python3 -m venv intrHDR_env
+
+# activate env
+source intrHDR_env/bin/activate
+```
+Next, clone this repository and install the requirements:
+
 ```bash
 # clone project   
-git clone https://github.com/compphoto/intrinsicHDR
+git clone https://github.com/compphoto/IntrinsicHDR
 
 # install project   
-cd intrinsicHDR
+cd IntrinsicHDR
 pip install .
  ```   
 
@@ -43,10 +53,13 @@ The pipeline expects input images to be linear.
 To dequantize and linearize images, run:
 
  ```bash
+# download pretrained weights 'model.ckpt.*' and put them into "./baselines/SingleHDR/checkpoints"
+wget https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/model.ckpt.*
+
 # run linearization, e.g.  
 python3 dequantize_and_linearize.py --test_imgs /path/to/input/imgs --output_path /path/to/results --root .
 ```
- Next, run our pipeline.  
+ Now, run our HDR reconstruction pipeline. The results will be saved as EXR files in --output_path:  
  ```bash
 # run module, e.g.  
 python3 inference.py --test_imgs /path/to/input/imgs --output_path /path/to/results --use_exr

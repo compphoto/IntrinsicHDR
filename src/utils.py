@@ -25,6 +25,9 @@ def load_config(path) -> dict:
 def read_image(path):
     return np.array(Image.open(path)).astype(np.float32) / 255.
 
+def read_ldr_image(path):
+    return np.array(Image.open(path))
+
 # these are the sRGB <-> linear functions from CGIntrinsics and Luo
 def rgb_to_srgb(rgb):
     ret = np.zeros_like(rgb)

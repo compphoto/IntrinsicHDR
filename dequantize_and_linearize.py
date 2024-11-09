@@ -59,9 +59,9 @@ def build_session(root):
     # load models
     sess = tf.Session(config=config)
     restorer0 = tf.train.Saver(var_list=[var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES) if 'Dequantization_Net' in var.name])
-    restorer0.restore(sess, root+'/baselines/SingleHDR/checkpoints/ckpt_deq_lin_hal_ref/model.ckpt')
+    restorer0.restore(sess, root+'/baselines/SingleHDR/checkpoints/model.ckpt')
     restorer2 = tf.train.Saver(var_list=[var for var in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES) if 'crf_feature_net' in var.name or 'ae_invcrf_' in var.name])
-    restorer2.restore(sess, root+'/baselines/SingleHDR/checkpoints/ckpt_deq_lin_hal_ref/model.ckpt')
+    restorer2.restore(sess, root+'/baselines/SingleHDR/checkpoints/model.ckpt')
 
     return sess
 
