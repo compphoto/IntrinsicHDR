@@ -9,41 +9,10 @@ import torch
 import torchvision.transforms.functional as TF
 
 
-def base_resize(img, base_size=384):
-    h, w, _ = img.shape
 
-    max_dim = max(h, w)
-    scale = base_size / max_dim
+def tonemap(img):
+    return img/(img+1.0)
 
-    new_h, new_w = scale * h, scale * w
-    new_h, new_w = round_32(new_h), round_32(new_w)
-
-    net_input = resize(img, (new_h, new_w, 3), anti_aliasing=True)
-    return net_input
-
-
-def equalize_predictions(img, base, full, p=0.5):
-
-    h, w, _ = img.shape
-
-    full_shd = (1. / full.clip(1e-5)) - 1.
-    base_shd = (1. / base.clip(1e-5)) - 1.
-
-    full_alb = get_brightness(img) / full_shd.clip(1e-5)
-    base_alb = get_brightness(img) / base_shd.clip(1e-5)
-
-    rand_msk = np.random.randn(h, w) > p
-
-    flat_full_alb = full_alb[np.where(rand_msk == 1)]
-    flat_base_alb = base_alb[np.where(rand_msk == 1)]
-
-    scale, _, _, _ = np.linalg.lstsq(flat_full_alb.reshape(-1, 1), flat_base_alb, rcond=None)
-
-    new_full_alb = scale * full_alb
-    new_full_shd = get_brightness(img) / new_full_alb.clip(1e-5)
-    new_full = 1.0 / (1.0 + new_full_shd)
-
-    return base, new_full
 
 def current_timestamp():
     return datetime.datetime.now().strftime('%y-%m-%d-%H-%M-%S')
@@ -137,13 +106,6 @@ def inv_to_real(inv_shading):
     shading = (1.0 / inv_shading) - 1.0
     return shading
 
-# # Example usage
-# rgb_color = RGB(0.5, 0.7, 0.2)
-# lab_color = linear_srgb_to_oklab(rgb_color)
-# print(f"Lab: L={lab_color.L}, a={lab_color.a}, b={lab_color.b}")
-
-# converted_rgb_color = oklab_to_linear_srgb(lab_color)
-# print(f"Converted RGB: r={converted_rgb_color.r}, g={converted_rgb_color.g}, b={converted_rgb_color.b}")
 
 
 def sample_1d(img, y_idx):

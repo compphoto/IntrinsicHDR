@@ -16,16 +16,21 @@ def load_models(
 ):
 
     models = {}
+    base_url = 'https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/'
 
     ord_model = MidasNet()
+    # ord_state_dict = torch.hub.load_state_dict_from_url(base_url + ord_path , map_location=device, progress=True)
     ord_model.load_state_dict(torch.load(ord_path))
     ord_model.eval()
     ord_model = ord_model.to(device)
+    ord_model.device = device
     
     mrg_model = MidasNet_small(exportable=False, input_channels=5, output_channels=1)
+    #mrg_state_dict = torch.hub.load_state_dict_from_url(base_url + mrg_path , map_location=device, progress=True)
     mrg_model.load_state_dict(torch.load(mrg_path)) 
     mrg_model.eval()
     mrg_model = mrg_model.to(device)
+    mrg_model.device = device
 
     models['ordinal_model'] = ord_model
     models['real_model'] = mrg_model

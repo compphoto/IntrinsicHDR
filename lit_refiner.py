@@ -9,7 +9,7 @@ import pytorch_lightning as pl
 from torch.nn import MSELoss as MSE
 import numpy as np
 
-from lit_reconstructer import LitReconstructor
+from lit_reconstructor import LitReconstructor
 from src.midas.midas_net import MidasNet_small
 from src.msg_loss import MSGLoss
 
@@ -26,7 +26,7 @@ class LitRefiner(pl.LightningModule):
     def __init__(self,
                  lr = 1e-4,
                  img_log_frequency=50,
-                 mode='baseline',
+                 mode='effnet-inv',
                  debug=False,
                  batch_size=8, 
                  max_epochs = 100,
@@ -50,14 +50,14 @@ class LitRefiner(pl.LightningModule):
                             mode='albedo',
                             )
             # use model after training or load weights and drop into the production system
-            ckpt = os.path.join(ALB_MODEL_PATH,'last.ckpt')
+            ckpt = os.path.join(ALB_MODEL_PATH,'alb_weights.ckpt')
             self.alb_model = LitReconstructor.load_from_checkpoint(ckpt)
             self.alb_model.eval()
 
             self.sh_model = LitReconstructor(
                             mode='shading',
                             )
-            ckpt = os.path.join(SH_MODEL_PATH,'last.ckpt')
+            ckpt = os.path.join(SH_MODEL_PATH,'sh_weights.ckpt')
             self.sh_model = LitReconstructor.load_from_checkpoint(ckpt)
             self.sh_model.eval()
         

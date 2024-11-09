@@ -1,6 +1,7 @@
 import os
 from abc import ABC, abstractmethod
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.compat.v1.disable_eager_execution()
 
 
 class Net(ABC):

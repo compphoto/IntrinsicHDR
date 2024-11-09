@@ -4,8 +4,10 @@ logging.basicConfig(level=logging.INFO)
 import argparse
 import os
 os.environ["OPENCV_IO_ENABLE_OPENEXR"]="1"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from tqdm import tqdm
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.compat.v1.disable_eager_execution()
 from baselines.SingleHDR.dequantization_net import Dequantization_net
 from baselines.SingleHDR.linearization_net import Linearization_net
 from baselines.SingleHDR.util import apply_rf

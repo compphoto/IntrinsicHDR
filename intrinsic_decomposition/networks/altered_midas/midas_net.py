@@ -29,6 +29,7 @@ class MidasNet(BaseModel):
         # use_pretrained = False if path is None else True
         use_pretrained = False
         self.out_chan = output_channels
+        self.device = 'cpu'
 
         self.pretrained, self.scratch = _make_encoder(
             backbone="resnext101_wsl", 

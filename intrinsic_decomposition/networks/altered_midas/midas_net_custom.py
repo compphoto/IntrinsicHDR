@@ -28,6 +28,8 @@ class MidasNet_small(BaseModel):
 
         use_pretrained = False if path else True
         self.out_chan = output_channels
+
+        self.device = 'cpu'
                 
         self.channels_last = channels_last
         self.blocks = blocks

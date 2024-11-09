@@ -1,7 +1,8 @@
 from baselines.SingleHDR.net import BaseNet, AggNet
 #from net import BaseNet, AggNet
-import tensorflow.contrib.slim as slim
-import tensorflow as tf
+import tf_slim as slim
+import tensorflow.compat.v1 as tf
+tf.compat.v1.disable_eager_execution()
 import numpy as np
 import os
 from baselines.SingleHDR.util import get_tensor_shape
@@ -239,7 +240,7 @@ class AEInvcrfDecodeNet(BaseNet):
         self.s = 1024
         self.n_p = 12
         self.act = tf.nn.tanh
-        self.reg = tf.contrib.layers.l2_regularizer(1e-3)
+        self.reg = tf.keras.regularizers.l2(1e-3)
 
         return
 

@@ -2,6 +2,7 @@ import torch
 
 import argparse
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import glob
 import cv2
 import numpy as np
@@ -74,7 +75,8 @@ def load_reconstruction_models(device,model_root = '.'):
                         )
 
     # use model after training or load weights and drop into the production system
-    ckpt = os.path.join(model_root,'checkpoints/shading','epoch=224-step=986597.ckpt')
+    ckpt = os.path.join(model_root,'checkpoints/shading','sh_weights.ckpt')
+    # ckpt = model_root + 'sh_weights.ckpt' 
     sh_model = LitReconstructor.load_from_checkpoint(ckpt)
     sh_model.to(device)
     sh_model.eval()
@@ -87,7 +89,8 @@ def load_reconstruction_models(device,model_root = '.'):
     alb_model = LitReconstructor(
                         mode='albedo',
                         )
-    ckpt = os.path.join(model_root,'checkpoints/albedo','epoch=272-step=1287147.ckpt')
+    ckpt = os.path.join(model_root,'checkpoints/albedo','alb_weights.ckpt')
+    # ckpt = model_root + 'alb_weights.ckpt' 
     alb_model = LitReconstructor.load_from_checkpoint(ckpt)
     alb_model.to(device)
     alb_model.eval()
@@ -96,11 +99,14 @@ def load_reconstruction_models(device,model_root = '.'):
     # ------------
     # refinement model
     # ------------
-    ref_model = LitRefiner(
-                        mode=args.ref_mode,
-                        )
-    ckpt = os.path.join(model_root,'checkpoints/refinement','epoch=26-step=532558.ckpt') 
-    ref_model = LitRefiner.load_from_checkpoint(ckpt)
+    ref_model = LitRefiner()
+    ckpt = os.path.join(model_root,'checkpoints/refinement','ref_weights.ckpt') 
+    checkpoint = torch.load(ckpt)
+    #checkpoint = torch.hub.load_state_dict_from_url(model_root + 'ref_weights.ckpt', progress=True)
+
+    # ignore potential albedo and shading weights
+    refiner_weights = {k: v for k, v in checkpoint["state_dict"].items() if k.startswith("refiner.")}
+    ref_model.load_state_dict(refiner_weights)
     ref_model.to(device)
     ref_model.eval()
     print('Refinement model loaded ...')
@@ -123,10 +129,12 @@ def hdr_reconstruction(reconstruction_networks,albedo_raw,inv_shading_raw,ldr_t,
     hdr_r: np.array, hdr image
     """
 
+    ldr_t = ldr_t.to(albedo_raw.device)
+
     # get guide 
     mask =  torch.max(torch.clamp(ldr_t-0.8,0,1)/0.2,dim=1,keepdims=True)[0]
-    
 
+    
     # Scale albedo:
     # due to the scale ambiguity of the decomposition, the scale
     # of the predicted albedo can vary greatly between images.
@@ -166,6 +174,8 @@ def hdr_reconstruction(reconstruction_networks,albedo_raw,inv_shading_raw,ldr_t,
     albedo_hdr = albedo_hdr.squeeze().permute(1,2,0).cpu().numpy()
     inv_sh_hdr = inv_sh_hdr.squeeze().cpu().numpy()
     mask = mask.squeeze().cpu().numpy()
+    albedo = albedo.squeeze().permute(1,2,0).cpu().numpy()
+    inv_shading = inv_shading.squeeze().cpu().numpy()
     
 
     return rgb_hdr, albedo_hdr, inv_sh_hdr, albedo, inv_shading, mask
@@ -236,8 +246,8 @@ def intrinsic_hdr(decomp_models,
     sh_raw = (1.0/pred_inv_shading_raw-1.0).squeeze().cpu().numpy()
     sh_raw = cv2.resize(sh_raw,(w_in,h_in))
 
-    alb_ldr = cv2.resize(rec_results[3].sqeeze().cpu().numpy(),(w_in,h_in))
-    sh_ldr = (1.0/rec_results[4]-1.0).sqeeze().cpu().numpy()
+    alb_ldr = cv2.resize(rec_results[3],(w_in,h_in))
+    sh_ldr = (1.0/rec_results[4]-1.0)
     sh_ldr = cv2.resize(sh_ldr,(w_in,h_in))
 
     # pack results
@@ -270,7 +280,6 @@ if __name__=='__main__':
     parser.add_argument('--res', type=int, default=None, help='Processing resolution.')
     parser.add_argument('--img_scale', type=float,default=1.0)
 
-    parser.add_argument('--store_intrinsics',action="store_true")
     parser.add_argument('--use_exr',action="store_true")
     parser.add_argument('--testing',action="store_true")
     parser.add_argument('--subfolder_structure',action="store_true")
@@ -351,39 +360,5 @@ if __name__=='__main__':
             ref_hdr_path = os.path.join(ref_out_path+'/',fname.replace('.exr',ext))
         cv2.imwrite(ref_hdr_path,cv2.cvtColor(hdr_r,cv2.COLOR_RGB2BGR),[cv2.IMWRITE_EXR_COMPRESSION,1])
 
-
-        # save intrinsic components
-        if args.store_intrinsics:
-
-            # unpack additional results
-            albedo_hdr = results['alb_hdr']
-            shading_hdr = results['sh_hdr']
-            mask = results['mask']
-            albedo_raw = results['alb_raw']
-            shading_raw = results['sh_raw']
-            albedo_ldr = results['alb_ldr']
-            shading_ldr = results['sh_ldr']
-            
-            o_hdr_path = os.path.join(ref_hdr_path.replace('.exr','_direct'+ext))
-            
-            # hdr intrinsics
-            alb_path =o_hdr_path.replace('_direct'+ext,'_alb_hdr.exr')
-            sh_path = o_hdr_path.replace('_direct'+ext,'_sh_hdr.exr')
-            mask_path = o_hdr_path.replace('_direct'+ext,'_mask.png')
-            cv2.imwrite(alb_path,cv2.cvtColor(albedo_hdr,cv2.COLOR_RGB2BGR))
-            cv2.imwrite(sh_path,shading_hdr)
-            cv2.imwrite(mask_path,np.uint16(mask)*65536)
-
-            # ldr intrinsics
-            alb_path = o_hdr_path.replace('_direct'+ext,'_alb_ldr.exr')
-            sh_path = o_hdr_path.replace('_direct'+ext,'_sh_ldr.exr')
-            cv2.imwrite(alb_path,cv2.cvtColor(albedo_ldr,cv2.COLOR_RGB2BGR))
-            cv2.imwrite(sh_path,shading_ldr)
-
-            # raw intrinsics
-            alb_path = o_hdr_path.replace('_direct'+ext,'_alb_raw.exr')
-            sh_path = o_hdr_path.replace('_direct'+ext,'_sh_raw.exr')
-            cv2.imwrite(alb_path,cv2.cvtColor(albedo_raw,cv2.COLOR_RGB2BGR))
-            cv2.imwrite(sh_path, shading_raw)
 
     print("Finished!")

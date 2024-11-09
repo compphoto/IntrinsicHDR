@@ -129,7 +129,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-ihdr_env/
+intrHDR_env/
+
 
 # Spyder project settings
 .spyderproject

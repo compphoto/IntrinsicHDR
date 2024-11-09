@@ -49,7 +49,7 @@ python3 dequantize_and_linearize.py --test_imgs /path/to/input/imgs --output_pat
  Next, run our pipeline.  
  ```bash
 # run module, e.g.  
-python inference.py
+python3 inference.py --test_imgs /path/to/input/imgs --output_path /path/to/results --use_exr
 ```
 
 
