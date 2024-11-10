@@ -77,7 +77,9 @@ def load_reconstruction_models(device,model_root = 'https://github.com/compphoto
     ## uncomment for offline working
     # ckpt = os.path.join(model_root,'checkpoints/shading','sh_weights.ckpt')
     
-    ckpt = model_root + 'sh_weights.ckpt' 
+    ## comment for offline working
+    ckpt = model_root + 'sh_weights.ckpt'
+
     sh_model = LitReconstructor.load_from_checkpoint(ckpt)
     sh_model.to(device)
     sh_model.eval()
@@ -93,6 +95,7 @@ def load_reconstruction_models(device,model_root = 'https://github.com/compphoto
     ## uncomment for offline working
     # ckpt = os.path.join(model_root,'checkpoints/albedo','alb_weights.ckpt')
 
+    ## comment for offline working
     ckpt = model_root + 'alb_weights.ckpt' 
     alb_model = LitReconstructor.load_from_checkpoint(ckpt)
     alb_model.to(device)
@@ -108,6 +111,7 @@ def load_reconstruction_models(device,model_root = 'https://github.com/compphoto
     # ckpt = os.path.join(model_root,'checkpoints/refinement','ref_weights.ckpt') 
     # checkpoint = torch.load(ckpt)
 
+    ## comment for offline working
     checkpoint = torch.hub.load_state_dict_from_url(model_root + 'ref_weights.ckpt', progress=True)
 
     # ignore potential albedo and shading weights
@@ -298,8 +302,8 @@ if __name__=='__main__':
     # decomposition models
     # ------------
     decomp_models = load_models(
-            ord_path='./intrinsic_decomposition/pretrained_weights/vivid_bird_318_300.pt',
-            mrg_path='./intrinsic_decomposition/pretrained_weights/fluent_eon_138_200.pt',
+            ord_path='vivid_bird_318_300.pt',
+            mrg_path='fluent_eon_138_200.pt',
             device = DEVICE
         )
     print('Decomposition models loaded ...')
@@ -308,8 +312,11 @@ if __name__=='__main__':
     # ------------
     # reconstruction models
     # ------------
-    model_root = '.'
-    reconstruction_models = load_reconstruction_models(DEVICE,model_root)
+
+    # uncomment for offline working and pass to load_reconstruction_models
+    # model_root = '.'
+
+    reconstruction_models = load_reconstruction_models(DEVICE)
     print('Reconstruction models loaded ...')
 
 

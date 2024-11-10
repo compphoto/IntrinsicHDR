@@ -38,7 +38,7 @@ python3 -m venv intrHDR_env
 # activate env
 source intrHDR_env/bin/activate
 ```
-Next, clone this repository and install the requirements:
+Next, clone this repository and install the requirements. Make sure that pip is up-to-date (python3 -m pip install --upgrade pip):
 
 ```bash
 # clone project   
@@ -57,6 +57,12 @@ To dequantize and linearize images, run:
 wget https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/model.ckpt.data-00000-of-00001
 wget https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/model.ckpt.index 
 wget https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/model.ckpt.meta 
+
+# create checkpoint directory
+mkdir ./baselines/SingleHDR/checkpoints
+
+# move weights to checkpoint directory.
+mv model.ckpt* ./baselines/SingleHDR/checkpoints/.
 
 # run linearization, e.g.  
 python3 dequantize_and_linearize.py --test_imgs /path/to/input/imgs --output_path /path/to/results --root .

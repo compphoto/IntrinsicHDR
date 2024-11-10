@@ -18,8 +18,8 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 
-ALB_MODEL_PATH = 'checkpoints/albedo'
-SH_MODEL_PATH = 'checkpoints/shading'
+ALB_MODEL_PATH = 'checkpoints/'
+SH_MODEL_PATH = 'checkpoints/'
 
 class LitRefiner(pl.LightningModule):
 

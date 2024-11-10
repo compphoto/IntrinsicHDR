@@ -2,7 +2,6 @@ from baselines.SingleHDR.net import BaseNet, AggNet
 #from net import BaseNet, AggNet
 import tf_slim as slim
 import tensorflow.compat.v1 as tf
-from tensorflow.keras.layers import BatchNormalization
 tf.compat.v1.disable_eager_execution()
 import numpy as np
 import os
@@ -50,15 +49,15 @@ class CrfFeatureNet(BaseNet):
             relu=False,
     ):
         with tf.variable_scope(name) as scope:
-            # output = slim.batch_norm(
-            #     input,
-            #     scale=True,
-            #     activation_fn=(tf.nn.relu if relu else None),
-            #     is_training=is_training,
-            # )
-            output=BatchNormalization(scale=True)(input)
-            if relu:
-              output = tf.nn.relu(output)
+            output = slim.batch_norm(
+                input,
+                scale=True,
+                activation_fn=(tf.nn.relu if relu else None),
+                is_training=is_training,
+            )
+            # output=BatchNormalization(scale=True)(input)
+            # if relu:
+            #   output = tf.nn.relu(output)
         return output
 
     def max_pool(
