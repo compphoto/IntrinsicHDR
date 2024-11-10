@@ -66,7 +66,7 @@ def build_session(root):
     return sess
 
 
-def dequantize_and_linearize(ldr_img, sess, graph):
+def dequantize_and_linearize(ldr_img, sess, graph, ldr, is_training):
     """Dequantize and linearize LDR image.
     Args:
         ldr_img: [H, W, 3], uint8
@@ -106,10 +106,7 @@ def dequantize_and_linearize(ldr_img, sess, graph):
     return lin_img
 
 
-ldr = tf.placeholder(tf.float32, [None, None, None, 3])
-is_training = tf.placeholder(tf.bool)
 
-lin_graph = build_graph(ldr, is_training)
 
 
 if __name__=='__main__':
@@ -121,6 +118,11 @@ if __name__=='__main__':
     parser.add_argument('--start_id',type=int, default=0)
     parser.add_argument('--end_id',type=int, default=None)
     args = parser.parse_args()
+
+    ldr = tf.placeholder(tf.float32, [None, None, None, 3])
+    is_training = tf.placeholder(tf.bool)
+
+    lin_graph = build_graph(ldr, is_training)
 
     # get session
     sess = build_session(args.root)
@@ -140,7 +142,7 @@ if __name__=='__main__':
         ldr_img = cv2.cvtColor(ldr_img,cv2.COLOR_BGR2RGB)
 
         # dequantize and linearize
-        linear_img = dequantize_and_linearize(ldr_img, sess, lin_graph)
+        linear_img = dequantize_and_linearize(ldr_img, sess, lin_graph, ldr, is_training)
 
         # save linear image
         cv2.imwrite(os.path.join(args.output_path, os.path.split(ldr_img_path)[-1][:-3]+'exr'), cv2.cvtColor(linear_img,cv2.COLOR_RGB2BGR),[cv2.IMWRITE_EXR_COMPRESSION,1])
