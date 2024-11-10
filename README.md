@@ -6,8 +6,8 @@
 # Intrinsic Single-Image HDR Reconstruction  
 
 [![Project](http://img.shields.io/badge/project-intrinsicHDR-cc9933.svg)](https://yaksoy.github.io/intrinsicHDR/)
-[![Paper](http://img.shields.io/badge/paper-ECCV2024-B31B1B.svg)](https://arxiv.org/abs/2409.13803)
 [![Video](http://img.shields.io/badge/video-YouTube-4b44ce.svg)](https://www.youtube.com/watch?v=EiyH52BcKkw)
+[![Paper](http://img.shields.io/badge/paper-ECCV2024-B31B1B.svg)](https://arxiv.org/abs/2409.13803)
 [![Supplementary](http://img.shields.io/badge/suppl.-intrinsicHDR-B31B1B.svg)](https://yaksoy.github.io/papers/ECCV24-IntrinsicHDR-supp.pdf)
 [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/compphoto/IntrinsicHDR/blob/main/notebooks/intrinsicHDR.ipynb)  
 

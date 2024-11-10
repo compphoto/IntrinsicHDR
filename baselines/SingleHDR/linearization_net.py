@@ -2,6 +2,7 @@ from baselines.SingleHDR.net import BaseNet, AggNet
 #from net import BaseNet, AggNet
 import tf_slim as slim
 import tensorflow.compat.v1 as tf
+from tensorflow.keras.layers import BatchNormalization
 tf.compat.v1.disable_eager_execution()
 import numpy as np
 import os
@@ -49,12 +50,15 @@ class CrfFeatureNet(BaseNet):
             relu=False,
     ):
         with tf.variable_scope(name) as scope:
-            output = slim.batch_norm(
-                input,
-                scale=True,
-                activation_fn=(tf.nn.relu if relu else None),
-                is_training=is_training,
-            )
+            # output = slim.batch_norm(
+            #     input,
+            #     scale=True,
+            #     activation_fn=(tf.nn.relu if relu else None),
+            #     is_training=is_training,
+            # )
+            output=BatchNormalization(scale=True)(input)
+            if relu:
+              output = tf.nn.relu(output)
         return output
 
     def max_pool(
@@ -353,8 +357,8 @@ class AEInvcrfDecodeNet(BaseNet):
             return invcrf
 
         for c in self.decode_spec:
-            x = tf.layers.dense(x, c, activation=self.act, kernel_regularizer=self.reg)
-        x = tf.layers.dense(x, self.n_p - 1)  # [b, n_p - 1]
+            x = tf.keras.layers.Dense( c, activation=self.act, kernel_regularizer=self.reg)(x)
+        x = tf.keras.layers.Dense(self.n_p - 1)(x)  # [b, n_p - 1]
         invcrf = invcrf_pca_w_2_invcrf(x)
         # x = tf.concat([x, 1.0 - tf.reduce_sum(x, axis=-1, keep_dims=True)], -1) # [b, n_p]
         # x = self._f(x) # [b, s]
