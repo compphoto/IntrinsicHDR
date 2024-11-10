@@ -196,3 +196,4 @@ __pycache__/
 *.mp4
 *.mov
 
+requirements_full.txt

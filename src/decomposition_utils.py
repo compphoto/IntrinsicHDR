@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import ipdb
 from src.color_utils import rgb_to_lab
 import torchvision.transforms.functional as TF
 from intrinsic_decomposition.common.general import round_32, get_brightness
