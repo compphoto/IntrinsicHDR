@@ -54,7 +54,9 @@ To dequantize and linearize images, run:
 
  ```bash
 # download pretrained weights 'model.ckpt.*' and put them into "./baselines/SingleHDR/checkpoints"
-wget https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/model.ckpt.*
+wget https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/model.ckpt.data-00000-of-00001
+wget https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/model.ckpt.index 
+wget https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/model.ckpt.meta 
 
 # run linearization, e.g.  
 python3 dequantize_and_linearize.py --test_imgs /path/to/input/imgs --output_path /path/to/results --root .
