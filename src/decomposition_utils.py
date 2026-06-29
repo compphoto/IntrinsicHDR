@@ -8,7 +8,7 @@ from intrinsic_decomposition.common.general import round_32, get_brightness
 def get_quantile(img, thresh):
 
     if img.numel()>=16000000:
-        qtl = torch.tensor(np.quantile(img.detach().cpu().numpy(), q=thresh)).to(img.device)
+        qtl = torch.tensor(np.quantile(img.detach().cpu().numpy(), q=thresh), dtype=torch.float32).to(img.device)
     else:
         qtl = torch.quantile(img,thresh)
 
@@ -31,7 +31,13 @@ def equalize_predictions(img, base, full, p=0.5):
 
 
     try:
-        scale, _, _, _ = torch.linalg.lstsq(flat_full_alb.reshape(b,-1,1), flat_base_alb.reshape(b,-1,1), rcond=None)
+        # Single-variable least squares (min ||A*x - B||) has the closed form
+        # x = (A·B) / (A·A). Solving it analytically keeps everything on the
+        # MPS backend; torch.linalg.lstsq has no MPS kernel and silently falls
+        # back to the CPU, forcing a full-resolution GPU<->CPU copy per image.
+        A = flat_full_alb.reshape(b, -1, 1)
+        B = flat_base_alb.reshape(b, -1, 1)
+        scale = (A * B).sum(dim=1, keepdim=True) / (A * A).sum(dim=1, keepdim=True).clamp(min=1e-8)
         scale = scale.unsqueeze(3)
         success=True
     except Exception as e:

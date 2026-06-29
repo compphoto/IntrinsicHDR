@@ -1,4 +1,6 @@
 import torch
+import gc
+import time
 
 import argparse
 import os
@@ -16,7 +18,11 @@ from lit_refiner import LitRefiner
 from src.color_utils import rgb_to_lab
 from src.decomposition_utils import decompose_torch, get_quantile
 
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available()
+    else "mps" if torch.backends.mps.is_available()
+    else "cpu"
+)
 print(DEVICE)
 
 
@@ -54,6 +60,33 @@ def blend_imgs(ldr,hdr,mask):
 
 
 
+def cap_long_side(img, max_dim):
+    """
+    Downscale an image so its longest side is at most `max_dim` pixels,
+    preserving aspect ratio. Never upscales.
+
+    Resampling happens here on the linear HDR float data, which is the correct
+    domain to resize in (before any display/gamma encoding). INTER_AREA is the
+    proper kernel for downscaling. The XDR panel's native long side is 3456 px,
+    so anything larger is wasted detail.
+
+    Args:
+    img: np.array (H, W, C), linear HDR float
+    max_dim: int, maximum allowed length of the longer dimension
+
+    Returns:
+    np.array, downscaled if needed (otherwise the input unchanged)
+    """
+    h, w = img.shape[:2]
+    long_side = max(h, w)
+    if long_side <= max_dim:
+        return img
+    scale = max_dim / long_side
+    new_w = max(1, round(w * scale))
+    new_h = max(1, round(h * scale))
+    return cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+
 def load_reconstruction_models(device,model_root = 'https://github.com/compphoto/IntrinsicHDR/releases/download/v1.0/'):
     """
     Load reconstruction models
@@ -80,7 +113,7 @@ def load_reconstruction_models(device,model_root = 'https://github.com/compphoto
     ## comment for offline working
     ckpt = model_root + 'sh_weights.ckpt'
 
-    sh_model = LitReconstructor.load_from_checkpoint(ckpt)
+    sh_model = LitReconstructor.load_from_checkpoint(ckpt, map_location=device)
     sh_model.to(device)
     sh_model.eval()
     print('Shading model loaded ...')    
@@ -97,7 +130,7 @@ def load_reconstruction_models(device,model_root = 'https://github.com/compphoto
 
     ## comment for offline working
     ckpt = model_root + 'alb_weights.ckpt' 
-    alb_model = LitReconstructor.load_from_checkpoint(ckpt)
+    alb_model = LitReconstructor.load_from_checkpoint(ckpt, map_location=device)
     alb_model.to(device)
     alb_model.eval()
     print('Albedo model loaded ...')
@@ -112,7 +145,7 @@ def load_reconstruction_models(device,model_root = 'https://github.com/compphoto
     # checkpoint = torch.load(ckpt)
 
     ## comment for offline working
-    checkpoint = torch.hub.load_state_dict_from_url(model_root + 'ref_weights.ckpt', progress=True)
+    checkpoint = torch.hub.load_state_dict_from_url(model_root + 'ref_weights.ckpt', progress=True, map_location=device)
 
     # ignore potential albedo and shading weights
     refiner_weights = {k: v for k, v in checkpoint["state_dict"].items() if k.startswith("refiner.")}
@@ -191,6 +224,7 @@ def hdr_reconstruction(reconstruction_networks,albedo_raw,inv_shading_raw,ldr_t,
     return rgb_hdr, albedo_hdr, inv_sh_hdr, albedo, inv_shading, mask
 
 
+@torch.no_grad()
 def intrinsic_hdr(decomp_models, 
                   reconstruction_networks, 
                   ldr_c, 
@@ -288,6 +322,8 @@ if __name__=='__main__':
     parser.add_argument('--end_id', type=int, default=None)
 
     parser.add_argument('--res', type=int, default=None, help='Processing resolution.')
+    parser.add_argument('--max_res', type=int, default=2560, help='Max long-side resolution; larger inputs are downsampled to bound peak memory.')
+    parser.add_argument('--max_output_dim', type=int, default=3456, help='Cap the longest side of the saved HDR image to this many pixels (aspect ratio preserved, downscale only). Set <=0 to disable.')
     parser.add_argument('--img_scale', type=float,default=1.0)
 
     parser.add_argument('--use_exr',action="store_true")
@@ -351,6 +387,30 @@ if __name__=='__main__':
     # inference
     # ------------
     for img_name in tqdm(imgs):
+        # Pause feature check
+        pause_file = os.path.expanduser('~/.hdr_pause')
+        if os.path.exists(pause_file):
+            print("\n[Pause] Pause requested. Releasing PyTorch models and memory...")
+            del decomp_models, reconstruction_models
+            gc.collect()
+            if torch.backends.mps.is_available():
+                torch.mps.empty_cache()
+            elif torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            print(f"[Pause] Memory released. Waiting for {pause_file} to be removed...")
+            while os.path.exists(pause_file):
+                time.sleep(2.0)
+                
+            print("\n[Pause] Resuming... Reloading models...")
+            decomp_models = load_models(
+                ord_path='vivid_bird_318_300.pt',
+                mrg_path='fluent_eon_138_200.pt',
+                device=DEVICE
+            )
+            reconstruction_models = load_reconstruction_models(DEVICE)
+            print("[Pause] Models reloaded. Resuming tonemapping...")
+
         fpath,fname = os.path.split(img_name)
         print(f'Processing img {fname} ...')
 
@@ -359,10 +419,15 @@ if __name__=='__main__':
         ldr_c = (cv2.cvtColor(ldr_in,cv2.COLOR_BGR2RGB)).astype(np.float32)
 
         # run intrinsic hdr reconstruction
-        results = intrinsic_hdr(decomp_models, reconstruction_models, ldr_c)
+        with torch.no_grad():
+            results = intrinsic_hdr(decomp_models, reconstruction_models, ldr_c, max_res=args.max_res, decomp_res=args.res)
 
         # unpack results
         hdr_r = results['rgb_hdr']
+
+        # downscale pass: cap the longest side (aspect ratio preserved, never upscales)
+        if args.max_output_dim and args.max_output_dim > 0:
+            hdr_r = cap_long_side(hdr_r, args.max_output_dim)
 
         # save refined hdr image
         if args.subfolder_structure:
@@ -371,7 +436,25 @@ if __name__=='__main__':
             ref_hdr_path = os.path.join(ref_img_out_path,fname.replace('.exr',ext))
         else:
             ref_hdr_path = os.path.join(ref_out_path+'/',fname.replace('.exr',ext))
-        cv2.imwrite(ref_hdr_path,cv2.cvtColor(hdr_r,cv2.COLOR_RGB2BGR),[cv2.IMWRITE_EXR_COMPRESSION,1])
+        # Half-float + ZIP: ~6x smaller masters than float32+RLE on photographic
+        # HDR, fully lossless on top of the half quantization (visually lossless
+        # for display-referred HDR). DWAA is unusable in this OpenCV build (it
+        # writes a corrupt 0-byte file). EXR params are ignored for Radiance .hdr.
+        if ext == '.exr':
+            write_params = [
+                cv2.IMWRITE_EXR_TYPE, cv2.IMWRITE_EXR_TYPE_HALF,
+                cv2.IMWRITE_EXR_COMPRESSION, cv2.IMWRITE_EXR_COMPRESSION_ZIP,
+            ]
+        else:
+            write_params = []
+        cv2.imwrite(ref_hdr_path, cv2.cvtColor(hdr_r, cv2.COLOR_RGB2BGR), write_params)
 
+        # Clear PyTorch cache to prevent OOM
+        del ldr_in, ldr_c, results, hdr_r
+        gc.collect()
+        if torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+        elif torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     print("Finished!")

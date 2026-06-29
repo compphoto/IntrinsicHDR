@@ -1,0 +1,7 @@
+[package]
+name = "hdr_orchestrator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ctrlc = { version = "3.4", features = ["termination"] }
